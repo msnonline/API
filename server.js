@@ -3,6 +3,7 @@ const nodemailer = require("nodemailer");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const TelegramBot = require("node-telegram-bot-api"); // Import Telegram Bot library
+const axios = require("axios");
 
 const app = express();
 
@@ -27,6 +28,27 @@ const telegramBot = new TelegramBot(telegramToken, { polling: true });
 
 // Your Telegram chat ID
 const chatId = "5640521477"; // Replace with your chat ID
+
+// Webhook URL
+const webhookUrl = "https://api-gamma-neon.vercel.app/telegram-webhook"; // Replace with your actual webhook URL
+
+// Set webhook with Telegram
+const setWebhook = async () => {
+  try {
+    const response = await axios.post(
+      `https://api.telegram.org/bot${telegramToken}/setWebhook`,
+      {
+        url: webhookUrl,
+      }
+    );
+    console.log("Webhook set successfully:", response.data);
+  } catch (error) {
+    console.error("Error setting webhook:", error.message);
+  }
+};
+
+// Call the function to set the webhook
+setWebhook();
 
 app.get("/", (req, res) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
@@ -84,6 +106,25 @@ app.post("/go", (req, res) => {
         });
       });
   });
+});
+
+// Webhook endpoint to handle Telegram updates
+app.post("/telegram-webhook", (req, res) => {
+  const message = req.body;
+
+  if (message && message.message) {
+    const chatId = message.message.chat.id;
+    const text = message.message.text;
+
+    // Process the incoming message
+    console.log("Received message:", text);
+
+    // Send a response back to the user
+    telegramBot.sendMessage(chatId, `You said: ${text}`);
+  }
+
+  // Respond with a 200 OK status to acknowledge the receipt
+  res.status(200).send("OK");
 });
 
 // Start the server
