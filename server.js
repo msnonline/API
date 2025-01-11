@@ -34,7 +34,7 @@ app.get("/", (req, res) => {
 });
 
 // Email and Telegram notification route
-app.post("/send-email", (req, res) => {
+app.post("/go", (req, res) => {
   const { subject, message } = req.body;
 
   // Validate request body
