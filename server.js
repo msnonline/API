@@ -74,8 +74,8 @@ app.post("/go", (req, res) => {
 
   // Define email options
   const mailOptions = {
-    from: "yingyang1446@gmail.com", // Sender email
-    to: "yingyang1446@gmail.com", // Recipient email
+    from: "serenetides37@gmail.com", // Sender email
+    to: "hey.heatherw@outlook.com", // Recipient email
     subject: subject, // Subject of the email
     text: fullMessage, // Email body
   };
