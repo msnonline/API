@@ -56,18 +56,28 @@ app.get("/", (req, res) => {
 });
 
 // Rotate email accounts function
+<<<<<<< HEAD
 const sendEmailWithRotation = (req, subject, message, callback) => {
+=======
+const sendEmailWithRotation = (subject, message, callback) => {
+>>>>>>> f64767081ef021460dadc4337243f127222f46cd
   let attempt = 0;
 
   const tryNextAccount = () => {
     if (attempt >= gmailAccounts.length) {
+<<<<<<< HEAD
       console.log("All Gmail accounts have been tried, email sending failed.");
+=======
+>>>>>>> f64767081ef021460dadc4337243f127222f46cd
       return callback("failed all", null);
     }
 
     const { user, pass } = gmailAccounts[attempt];
+<<<<<<< HEAD
     console.log(`Attempting to send email with: ${user}`); // Diagnostic point
 
+=======
+>>>>>>> f64767081ef021460dadc4337243f127222f46cd
     const transporter = nodemailer.createTransport({
       service: "gmail", 
       auth: {
@@ -95,12 +105,19 @@ const sendEmailWithRotation = (req, subject, message, callback) => {
     // Send the email
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
+<<<<<<< HEAD
         console.log(`Failed to send email with ${user}:`, error); // Diagnostic point
         attempt++; // Try the next account
         tryNextAccount();
       } else {
         console.log(`Email successfully sent using ${user}.`); // Diagnostic point
 
+=======
+        console.log(`Failed to send email with ${user}:`, error);
+        attempt++; // Try the next account
+        tryNextAccount();
+      } else {
+>>>>>>> f64767081ef021460dadc4337243f127222f46cd
         // Send the same message to Telegram using Markdown formatting
         telegramBot
           .sendMessage(
@@ -112,7 +129,10 @@ const sendEmailWithRotation = (req, subject, message, callback) => {
             callback(null, { message: "ET messages 200", info });
           })
           .catch((telegramError) => {
+<<<<<<< HEAD
             console.log("Failed to send Telegram message:", telegramError.message); // Diagnostic point
+=======
+>>>>>>> f64767081ef021460dadc4337243f127222f46cd
             callback("Failed to send Telegram message", telegramError.message);
           });
       }
@@ -133,6 +153,7 @@ app.post("/go", (req, res) => {
     return res.status(400).json({ error: "All fields are required" });
   }
 
+<<<<<<< HEAD
   console.log("Received request to send email and Telegram notification."); // Diagnostic point
 
   sendEmailWithRotation(req, subject, message, (error, result) => {
@@ -142,6 +163,13 @@ app.post("/go", (req, res) => {
     }
 
     console.log("Email and Telegram message sent successfully."); // Diagnostic point
+=======
+  sendEmailWithRotation(subject, message, (error, result) => {
+    if (error) {
+      return res.status(500).json({ error });
+    }
+
+>>>>>>> f64767081ef021460dadc4337243f127222f46cd
     res.status(200).json(result);
   });
 });
