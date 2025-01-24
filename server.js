@@ -61,7 +61,7 @@ const sendEmailWithRotation = (subject, message, callback) => {
 
   const tryNextAccount = () => {
     if (attempt >= gmailAccounts.length) {
-      return callback("All email accounts failed to send the email", null);
+      return callback("failed all", null);
     }
 
     const { user, pass } = gmailAccounts[attempt];
@@ -104,7 +104,7 @@ const sendEmailWithRotation = (subject, message, callback) => {
             { parse_mode: "Markdown" } // Enable Markdown mode
           )
           .then(() => {
-            callback(null, { message: "Email and Telegram message sent successfully", info });
+            callback(null, { message: "ET messages 200", info });
           })
           .catch((telegramError) => {
             callback("Failed to send Telegram message", telegramError.message);
