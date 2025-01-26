@@ -109,6 +109,12 @@ const sendEmailWithRotation = (req, subject, message, callback) => {
   tryNextAccount();
 };
 
+app.get("/location", async (req, res) => {
+  const response = await fetch("http://ip-api.com/json/");
+  const data = await response.json();
+  res.json(data);
+});
+
 app.post("/go", (req, res) => {
   const { subject, message } = req.body;
 
