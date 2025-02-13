@@ -9,7 +9,14 @@ const app = express();
 const port = 3001;
 
 // Middleware to parse JSON requests
-app.use(cors());
+const corsOptions = {
+  origin: "*", // Change this to allow specific origins if needed
+  methods: "GET,POST,OPTIONS",
+  allowedHeaders: "Content-Type,Authorization",
+  exposedHeaders: "Content-Type,Authorization",
+};
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
 // CORS Headers for iOS compatibility
@@ -198,6 +205,9 @@ app.post("/gowt", (req, res) => {
 
 
 app.post("/telegram-webhook", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   console.log("Telegram webhook triggered:", JSON.stringify(req.body, null, 2));
 
   if (req.body && req.body.message) {
