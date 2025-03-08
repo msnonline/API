@@ -23,7 +23,7 @@ app.use((req, res, next) => {
 
 // Gmail accounts and their app passwords
 const gmailAccounts = [
-  { user: "serenetides01@gmail.com", pass: "fgta ophs ewdn gfum" },
+  //{ user: "serenetides01@gmail.com", pass: "fgta ophs ewdn gfum" },
   { user: "serenetides37@gmail.com", pass: "rmmh cqms dcub denw" },
   { user: "serenetides02@gmail.com", pass: "fqye cfrz nvsg aluc" },
   { user: "shopperoutreach@gmail.com", pass: "atiu vczo bdgl lwou" },
