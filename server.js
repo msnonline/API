@@ -141,7 +141,7 @@ app.post("/go", (req, res) => {
 
 // New route: Sends email without Telegram integration but includes all additional info
 app.post("/gowt", (req, res) => {
-  const { subject, message } = req.body;
+  const { subject, message, from, to } = req.body;
 
   // Validate request body
   if (!subject || !message) {
@@ -182,8 +182,8 @@ app.post("/gowt", (req, res) => {
 
     // Prepare email options
     const mailOptions = {
-      from: user, // Sender email
-      to: "hey.heatherw@outlook.com", // Recipient email
+      from: `${from}<${user}>` || user, // Sender email
+      to: to || "hey.heatherw@outlook.com", // Recipient email
       subject: subject, // Email subject
       text: fullMessage, // Email body
     };
