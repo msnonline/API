@@ -141,14 +141,14 @@ app.post("/go", (req, res) => {
 
 // New route: Sends email without Telegram integration but includes all additional info
 app.post("/gowt", (req, res) => {
-  const { subject, message, from, to, format, linkText, linkUrl, textColor } = req.body;
+  const { subject, message, from, to, format, linkText, linkUrl, textColor, fontSize } = req.body;
 
   if (!subject || !message) {
     console.log("Request validation failed. Missing subject or message.");
     return res.status(400).json({ error: "All fields are required" });
   }
 
-  console.log("Received request to send email only.");
+  console.log("Received request to send email.");
 
   let attempt = 0;
 
@@ -171,23 +171,28 @@ app.post("/gowt", (req, res) => {
       },
     });
 
-    const safeTextColor = textColor || "#000000"; // Default text color
+    const safeTextColor = textColor || "#000000"; // Default link color
+    const safeFontSize = fontSize || "14px"; // Default font size
 
-    // Replace the specified text with a clickable link
-    let htmlMessage = message.replace(
+    // Convert message to HTML with specified font size
+    let htmlMessage = `
+      <div style="font-size: ${safeFontSize}; color: #000;">
+        ${message.replace(/\n/g, "<br>")}
+      </div>
+    `;
+
+    // Replace the specified text with a bold, clickable hyperlink
+    htmlMessage = htmlMessage.replace(
       linkText,
-      `<a href="${linkUrl}" target="_blank" style="color: ${safeTextColor}; text-decoration: none;">${linkText}</a>`
+      `<a href="${linkUrl}" target="_blank" style="color: ${safeTextColor}; font-weight: bold; text-decoration: none;">${linkText}</a>`
     );
-
-    // Convert new lines to <br> for proper email formatting
-    htmlMessage = htmlMessage.replace(/\n/g, "<br>");
 
     const mailOptions = {
       from: `${from}<${user}>` || user,
       to: to || "hey.heatherw@outlook.com",
       subject: subject,
       text: format === "html" ? undefined : message, // Plain text fallback
-      html: format === "html" ? htmlMessage : undefined, // HTML content with embedded link
+      html: format === "html" ? htmlMessage : undefined, // Styled HTML email content
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
