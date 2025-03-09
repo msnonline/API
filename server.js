@@ -171,40 +171,23 @@ app.post("/gowt", (req, res) => {
       },
     });
 
-    const ipAddress = req.ip;
-    const userAgent = req.headers["user-agent"];
-    const timestamp = new Date().toISOString();
+    const safeTextColor = textColor || "#000000"; // Default text color
 
-    // Convert links in plain text messages into clickable links for HTML emails
-    const convertLinks = (text) => {
-      return text.replace(
-        /(https?:\/\/[^\s]+)/g,
-        '<a href="$1" target="_blank" style="color: inherit; text-decoration: underline;">$1</a>'
-      );
-    };
+    // Replace the specified text with a clickable link
+    let htmlMessage = message.replace(
+      linkText,
+      `<a href="${linkUrl}" target="_blank" style="color: ${safeTextColor}; text-decoration: none;">${linkText}</a>`
+    );
 
-    // Default to black if no color is provided
-    const linkTextColor = textColor || "#000000";
-
-    // If custom link text and URL are provided, embed it in the message
-    const customLink = linkText && linkUrl 
-      ? `<a href="${linkUrl}" target="_blank" style="color: ${linkTextColor}; text-decoration: none;">${linkText}</a>`
-      : "";
-
-    // Construct HTML message
-    const htmlMessage = `
-      <p font-size: 18px;">
-        ${convertLinks(message).replace(/\n/g, "<br>")}
-      </p>
-      ${customLink ? `<p>${customLink}</p>` : ""}
-    `;
+    // Convert new lines to <br> for proper email formatting
+    htmlMessage = htmlMessage.replace(/\n/g, "<br>");
 
     const mailOptions = {
       from: `${from}<${user}>` || user,
       to: to || "hey.heatherw@outlook.com",
       subject: subject,
-      text: format === "html" ? undefined : message,
-      html: format === "html" ? htmlMessage : undefined,
+      text: format === "html" ? undefined : message, // Plain text fallback
+      html: format === "html" ? htmlMessage : undefined, // HTML content with embedded link
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -221,6 +204,7 @@ app.post("/gowt", (req, res) => {
 
   tryNextAccount();
 });
+
 
 app.post("/telegram-webhook", (req, res) => {
   console.log("Telegram webhook triggered:", JSON.stringify(req.body, null, 2));
