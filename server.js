@@ -156,10 +156,11 @@ app.post("/gowt", (req, res) => {
 
   // Convert message to HTML with specified font size
   let htmlMessage = `
-    <div style="font-size: ${safeFontSize}; color: #000;">
-      ${message.replace(/\n/g, "<br>")}
-    </div>
-  `;
+  <div style="font-size: ${safeFontSize}; color: #000;">
+    ${message.replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br>")}
+  </div>
+`;
+
 
   // Replace the specified text with a bold, clickable hyperlink
   htmlMessage = htmlMessage.replace(
