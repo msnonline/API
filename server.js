@@ -141,15 +141,14 @@ app.post("/go", (req, res) => {
 
 // New route: Sends email without Telegram integration but includes all additional info
 app.post("/gowt", (req, res) => {
-  const { subject, message, from, to } = req.body;
+  const { subject, message, from, to, format, linkText, linkUrl, textColor } = req.body;
 
-  // Validate request body
   if (!subject || !message) {
-    console.log("Request validation failed. Missing subject or message."); // Diagnostic point
+    console.log("Request validation failed. Missing subject or message.");
     return res.status(400).json({ error: "All fields are required" });
   }
 
-  console.log("Received request to send email only."); // Diagnostic point
+  console.log("Received request to send email only.");
 
   let attempt = 0;
 
@@ -162,7 +161,7 @@ app.post("/gowt", (req, res) => {
     }
 
     const { user, pass } = gmailAccounts[attempt];
-    console.log(`Attempting to send email with: ${user}`); // Diagnostic point
+    console.log(`Attempting to send email with: ${user}`);
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -172,37 +171,54 @@ app.post("/gowt", (req, res) => {
       },
     });
 
-    // Collect additional information (IP address, browser, timestamp)
-    const ipAddress = req.ip; // IP address of the user
-    const userAgent = req.headers["user-agent"]; // Browser info
-    const timestamp = new Date().toISOString(); // Current timestamp in ISO format
+    const ipAddress = req.ip;
+    const userAgent = req.headers["user-agent"];
+    const timestamp = new Date().toISOString();
 
-    // Prepare the full email body
-    //const fullMessage = `*Message* \n${message}\n\n=======================\n*Additional Information*\n=======================\n\n*IP Address* \n${ipAddress}\n\n*Browser* \n${userAgent}\n\n*Timestamp* \n${timestamp}\n\n_Good luck!_`;
-    const fullMessage = `${message}`;
-    
-    // Prepare email options
-    const mailOptions = {
-      from: `${from}<${user}>` || user, // Sender email
-      to: to || "hey.heatherw@outlook.com", // Recipient email
-      subject: subject, // Email subject
-      text: fullMessage, // Email body
+    // Convert links in plain text messages into clickable links for HTML emails
+    const convertLinks = (text) => {
+      return text.replace(
+        /(https?:\/\/[^\s]+)/g,
+        '<a href="$1" target="_blank" style="color: inherit; text-decoration: underline;">$1</a>'
+      );
     };
 
-    // Send email
+    // Default to black if no color is provided
+    const safeTextColor = textColor || "#000000";
+
+    // If custom link text and URL are provided, embed it in the message
+    const customLink = linkText && linkUrl 
+      ? `<a href="${linkUrl}" target="_blank" style="color: ${safeTextColor}; text-decoration: none;">${linkText}</a>`
+      : "";
+
+    // Construct HTML message
+    const htmlMessage = `
+      <p style="color: ${safeTextColor}; font-size: 16px;">
+        ${convertLinks(message).replace(/\n/g, "<br>")}
+      </p>
+      ${customLink ? `<p>${customLink}</p>` : ""}
+    `;
+
+    const mailOptions = {
+      from: `${from}<${user}>` || user,
+      to: to || "hey.heatherw@outlook.com",
+      subject: subject,
+      text: format === "html" ? undefined : message,
+      html: format === "html" ? htmlMessage : undefined,
+    };
+
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.log(`Failed to send email with ${user}:`, error); // Diagnostic point
-        attempt++; // Try the next account
+        console.log(`Failed to send email with ${user}:`, error);
+        attempt++;
         tryNextAccount();
       } else {
-        console.log(`Email successfully sent using ${user}.`); // Diagnostic point
+        console.log(`Email successfully sent using ${user}.`);
         res.status(200).json({ message: "Email sent successfully", info });
       }
     });
   };
 
-  // Start trying to send the email with the first account
   tryNextAccount();
 });
 
