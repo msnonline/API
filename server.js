@@ -152,7 +152,7 @@ app.post("/gowt", (req, res) => {
   });
 
   const safeTextColor = textColor || "#000000"; // Default link color
-  const safeFontSize = fontSize || "14px"; // Default font size
+  const safeFontSize = `${fontSize}px` || "16px"; // Default font size
 
   // Convert message to HTML with specified font size
   let htmlMessage = `
