@@ -184,16 +184,16 @@ app.post("/gowt", (req, res) => {
     };
 
     // Default to black if no color is provided
-    const safeTextColor = textColor || "#000000";
+    const linkTextColor = textColor || "#000000";
 
     // If custom link text and URL are provided, embed it in the message
     const customLink = linkText && linkUrl 
-      ? `<a href="${linkUrl}" target="_blank" style="color: ${safeTextColor}; text-decoration: none;">${linkText}</a>`
+      ? `<a href="${linkUrl}" target="_blank" style="color: ${linkTextColor}; text-decoration: none;">${linkText}</a>`
       : "";
 
     // Construct HTML message
     const htmlMessage = `
-      <p style="color: ${safeTextColor}; font-size: 16px;">
+      <p font-size: 18px;">
         ${convertLinks(message).replace(/\n/g, "<br>")}
       </p>
       ${customLink ? `<p>${customLink}</p>` : ""}
